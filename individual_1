@@ -1,0 +1,228 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
+
+#define DATE_SIZE 12
+#define SIZE1 107
+#define SIZE2 2024
+
+
+void loadFile();
+void printFirstYear();
+void printFirstMonth();
+void freeMemory();
+void displayMenu();
+void loadMonthlyProfitPerYear();
+
+
+struct SalesAnalysis
+{
+    char date[DATE_SIZE];
+    unsigned long long int id;
+    char *productName;
+    char *productCategory;
+    char *productSubcategory;
+    double unitPrice;
+    const unsigned int quantitySold;
+    char *countryOfSale;
+    char *cityOfSale;
+    struct SalesAnalysis *next;
+};
+
+typedef struct SalesAnalysis SalesData;
+SalesData *start = NULL;
+int yearMonth[SIZE2][DATE_SIZE + 1];
+
+
+int main()
+{
+    int choice;
+    do{
+        loadFile();
+        displayMenu();
+        loadMonthlyProfitPerYear();
+        printf("Enter your choice: ");
+        scanf("%d",&choice);
+        switch(choice) {
+            case 1:
+                loadMonthlyProfitPerYear();
+                break;
+            case 2:
+                printFirstYear();
+                break;
+                printFirstMonth();
+            default:
+                printf("Ai 2 optiuni, de ce ceri altceva\n");
+        }
+    }while(choice);
+
+    freeMemory();
+
+    printf("merge dupa free\n");
+
+    return 0;
+}
+
+void loadFile()
+{
+    FILE *file = fopen("sales.txt", "r");
+    if (file == NULL)
+    {
+        printf("File couldn't be opened...\n");
+        exit(-1);
+    }
+
+    SalesData *last = NULL;
+
+    while (1)
+    {
+        char tempProductName[SIZE1];
+        char tempProductCategory[SIZE1];
+        char tempProductSubcategory[SIZE1];
+        char tempCountryOfSale[SIZE1];
+        char tempCityOfSale[SIZE1];
+        char tempDate[DATE_SIZE];
+
+        SalesData *temp = (SalesData *)malloc(sizeof(SalesData));
+        if (temp == NULL)
+        {
+            printf("Memory allocation error...\n");
+            exit(-1);
+        }
+
+        if (fscanf(file, "%[^,],%llu,%[^,],%[^,],%[^,],%lf,%d,%[^,],%[^\n]",
+               tempDate,
+               &temp->id,
+               tempProductName,
+               tempProductCategory,
+               tempProductSubcategory,
+               &temp->unitPrice,
+               &temp->quantitySold,
+               tempCountryOfSale,
+               tempCityOfSale) != 9)
+        {
+            free(temp);
+            break;
+        }
+
+        int year, month;
+        if (sscanf(tempDate, "%d-%d", &year, &month) == 2)
+        {
+            yearMonth[year][month] += temp->quantitySold * temp->unitPrice;
+        }
+
+        strcpy(temp->date, tempDate);
+        temp->productName = strdup(tempProductName);
+        temp->productCategory = strdup(tempProductCategory);
+        temp->productSubcategory = strdup(tempProductSubcategory);
+        temp->countryOfSale = strdup(tempCountryOfSale);
+        temp->cityOfSale = strdup(tempCityOfSale);
+        temp->next = NULL;
+
+        if (start == NULL)
+        {
+            start = temp;
+            last = temp;
+        }
+        else
+        {
+            last->next = temp;
+            last = temp;
+        }
+    }
+
+    fclose(file);
+}
+
+void freeMemory()
+{
+    SalesData *tempStart = start;
+    while (tempStart != NULL)
+    {
+        SalesData *temp = tempStart;
+        tempStart = tempStart->next;
+        free(temp->productName);
+        free(temp->productCategory);
+        free(temp->productSubcategory);
+        free(temp->countryOfSale);
+        free(temp->cityOfSale);
+        free(temp);
+    }
+}
+
+void printFirstYear()
+{
+    if (start != NULL)
+    {
+        int year;
+        sscanf(start->date, "%d", &year);
+        printf("The first year in the file is: %d\n", year);
+    }
+    else
+    {
+        printf("The file is empty.\n");
+    }
+}
+
+void printFirstMonth()
+{
+    if (start != NULL)
+    {
+        int year, month;
+        sscanf(start->date, "%d-%d", &year, &month);
+        printf("The first month in the file is: %d\n", month);
+    }
+    else
+    {
+        printf("The file is empty.\n");
+    }
+}
+
+void loadMonthlyProfitPerYear()
+{
+    int year, month;
+
+    printf("Offer the exact year: ");
+    scanf("%d", &year);
+    printf("Offer the exact month: ");
+    scanf("%d", &month);
+
+    unsigned long long int profit = yearMonth[year][month];
+
+    printf("The profit in the year %d and the month %d calculated is: %llu\n", year, month, profit);
+}
+
+void displayMenu()
+{
+    int choice;
+    printf("\n********************************************************\n");
+
+    printf("---  (1)  Display profit each year together with month   ---\n");
+    printf("---  (2)  Print the first year in the file               ---\n");
+    printf("---  (3)  Print the first month in the file              ---\n");
+
+    printf("\n********************************************************\n");
+
+    printf("Enter your choice: ");
+
+    scanf("%d", &choice);
+
+
+    switch(choice)
+    {
+        case 1:
+            loadMonthlyProfitPerYear();
+            break;
+        case 2:
+            printFirstYear();
+            break;
+        case 3:
+            printFirstMonth();
+            break;
+        default:
+            printf("Ai de pus cifre doar intre 1 si 3...\n");
+    }
+}
+
